@@ -152,9 +152,10 @@ def format_query(s_query, config):
 
     s_result = s_query
 
+    # `escaping_chars`는 맨 위에 etl_config default에 지정되어 있다.
     for var, val in config['escaping_chars'].items():
         s_result = s_result.replace(var, val)
-
+    # `@bq_target_project`, `@bq_target_dataset` 변수이다.
     for var, val in config['variables'].items():
         s_result = s_result.replace(var, val)
 
@@ -220,9 +221,10 @@ def nice_message(s_filename, status, msg):
 
 def main():
 
-    rc = 0
-    duration = datetime.datetime.now()
-    params = read_params()
+    rc = 0 # return code
+    duration = datetime.datetime.now() # 걸린 시간 계산용
+    params = read_params() 
+    # in process 4 of `vocabulary_refresh.py`, there is no etlconf_file.
     config = read_config(params['etlconf_file'], params['config_file'])
 
     # stop if any files are not found
@@ -242,17 +244,20 @@ def main():
             print('Run script {file}\n'.format(file=s_filename))
 
             s_queries = open(s_filename).read().split(';')
-            s_queries = trim_queries(s_queries)
+            s_queries = trim_queries(s_queries) # comment 제거
             
             query_no = 0
             for s_query in s_queries:
-
+                
+                # `create_voc_from_tmp.sql` 내의 변수들을 매핑된 value로 replace하고 해당 포맷을 최종 점검한다.
                 bqc = bq_command.format(
                     query=troubleshooting_bqc_format(format_query(s_query, config))
                 )
                 query_no += 1
                 print('Starting query...')
 
+                # 쿼리를 실행한다.
+                # `create_voc_from_tmp.sql`는 `Standardized Vocabularies` 테이블들을 tmp_*로부터 생성한다.
                 rc = os.system(bqc)
 
                 if rc != 0:

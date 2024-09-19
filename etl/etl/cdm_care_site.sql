@@ -91,3 +91,22 @@ LEFT JOIN
         AND vc2.invalid_reason IS NULL
 ;
 
+-- -------------------------------------------------------------------
+-- 2024.09.19. David Hwang.
+-- Modify above query fit into our project 'AEGIS'.
+-- -------------------------------------------------------------------
+
+CREATE TABLE mimic_omop_cdm.lk_trans_careunit_clean AS
+SELECT
+    src.careunit                        AS source_code,
+    src.load_table_id                   AS load_table_id,
+    0                                   AS load_row_id,
+    MIN(src.trace_id)                   AS trace_id
+FROM 
+    mimiciv_hosp.transfers src
+WHERE
+    src.careunit IS NOT NULL
+GROUP BY
+    careunit,
+    load_table_id
+;

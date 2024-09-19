@@ -106,6 +106,8 @@ def read_config(etlconf_file, config_file):
         config[k] = s
     
     # local config has higher priority
+    # global config는 `*.etlconf`이고, local config는 `*.conf`이다.
+    # local config > global config 이다.
     for k in config_default:
         s = config_read.get(k, config[k])
         config[k] = s
@@ -125,6 +127,7 @@ def main():
 
     params = read_params()
     config = read_config(params['etlconf_file'], params['config_file'])
+    # etlconf와 workflow_*.conf를 완성된 conf 파일로 가져온다.
 
     run_command_bq_script = "python scripts/bq_run_script.py {e} {etlconf_file} {c} {config_file} {script_file}"
 
@@ -134,8 +137,10 @@ def main():
         else params['script_files']
 
     # run all given scripts at a time
+    # `map`으로 만들어진 리스트의 각 요소를 ' '로 연결시킨 하나의 문자열로 바꾼다.
+    # e.g., ['apple', 'banana', 'candy'] => 'apple banana candy'
     run_command = run_command_bq_script.format(
-        script_file= ' '.join(map( lambda s : s['script'], to_run)),
+        script_file= ' '.join(map( lambda s : s['script'], to_run)), 
         e = ('-e' if len(params['etlconf_file'])> 0 else ''),
         etlconf_file= params['etlconf_file'],
         c = ('-c' if len(params['config_file'])> 0 else ''),

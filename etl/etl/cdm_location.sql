@@ -55,3 +55,47 @@ SELECT
     0                           AS load_row_id,
     CAST(NULL AS STRING)        AS trace_id
 ;
+
+
+-- -------------------------------------------------------------------
+-- 2024.09.19. David Hwang.
+-- Modify above query fit into our project 'AEGIS'.
+-- -------------------------------------------------------------------
+
+CREATE TABLE mimic_omop_cdm.cdm_location
+(
+    location_id           NUMERIC     not null ,
+    address_1             TEXT             ,
+    address_2             TEXT             ,
+    city                  TEXT             ,
+    state                 TEXT             ,
+    zip                   TEXT             ,
+    county                TEXT             ,
+    location_source_value TEXT             ,
+    unit_id                       TEXT,
+    load_table_id                 TEXT,
+    load_row_id                   NUMERIC,
+    trace_id                      TEXT
+)
+;
+
+INSERT INTO mimic_omop_cdm.cdm_location
+SELECT
+    1                           AS location_id,
+    CAST(NULL AS TEXT)        AS address_1,
+    CAST(NULL AS TEXT)        AS address_2,
+    CAST(NULL AS TEXT)        AS city,
+    'MA'                        AS state,
+    CAST(NULL AS TEXT)        AS zip,
+    CAST(NULL AS TEXT)        AS county,
+    'Beth Israel Hospital'      AS location_source_value,
+    -- 
+    'location.null'             AS unit_id,
+    'null'                      AS load_table_id,
+    0                           AS load_row_id,
+    CAST(NULL AS TEXT)        AS trace_id
+;
+
+SELECT *
+	FROM mimic_omop_cdm.cdm_location cl 
+;

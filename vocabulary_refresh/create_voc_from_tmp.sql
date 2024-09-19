@@ -21,6 +21,12 @@
 -- concept
 -- ------------------------------------------------------------------------------
 
+-- "variables": 
+-- {
+--     "@bq_target_project":        "odysseus-mimic-dev",
+--     "@bq_target_dataset":        "vocab_2023_01_23_work22"
+-- }
+
 CREATE OR REPLACE TABLE `@bq_target_project.@bq_target_dataset`.concept AS
 SELECT
     concept_id,

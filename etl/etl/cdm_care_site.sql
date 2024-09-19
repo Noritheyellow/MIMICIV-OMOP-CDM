@@ -103,7 +103,7 @@ SELECT
     0                                   AS load_row_id,
     MIN(src.trace_id)                   AS trace_id
 FROM 
-    mimiciv_hosp.transfers src
+    mimic_omop_cdm.src_transfers src
 WHERE
     src.careunit IS NOT NULL
 GROUP BY

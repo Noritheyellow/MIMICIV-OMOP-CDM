@@ -169,6 +169,12 @@ def load_table(table, gs_path, field_delimiter, quote, config):
         prefix=config['bq_athena_temp_table_prefix'], table=table)
     table_schema = schema_path.format(dir=config['schemas_dir_all_csv'], table=table)
     
+    # process 7: 
+    # table_path = {dataset}.tmp_custom_mapping
+    # gs_path = gs://mimic_iv_to_omop/custom_mapping/*.csv
+    # table_schema = omop_schemas_vocab_bq/custom_mapping.json
+    # 
+    # 즉, tmp_custom_mapping이라는 테이블에는 `gs_path`경로에 있는 모든 csv 파일들을 넣는다.
     if os.path.isfile(table_schema):
         bqc = bq_load_command.format( \
             table_name = table_path, \

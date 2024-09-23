@@ -111,6 +111,22 @@ def read_config(config_file):
 # 이 파일 이름이 Refresh인 이유는 `Standardized Vocabularies` 스키마의 테이블을 최신화된 버전으로 다시 테이블을 replace하기 때문이다.
 # 진행하기에 앞서, vocabulary_refresh/Readme.md 에 따르면 ATHENA에서 내려받은 표준어휘집을 
 
+# Workflow:
+#
+# 1. Athena로부터 어휘집 다운받기
+# 2. gsutil에 올라간 기존 어휘집 삭제 후, 다운받은 어휘집 업로드 하기.
+# 3. gsutil에 올라간 어휘집을 기반으로 BigQuery를 수행.
+#    tmp_* 테이블 생성. (e.g., tmp_concept, tmp_concept_ancestor, etc.)
+#    즉, 여기서는 스냅샷을 찍는 역할을 수행한다.
+# 4. 만들어진 tmp_* 테이블에서 `create_voc_from_tmp.sql`을 실행해서 tmp_concept -> concept 테이블로 바꾸는 식으로 쿼리 진행.
+# 5. custom mapping 파일을 정의하고(vocabulary_refresh/custom_mapping_template 내용 참고.), custom_mapping_list.tsv도 업데이트한다.
+# 6. custom mapping 파일을 gsutil에 올리기
+# 7. tmp_custom_mapping 이라는 테이블을 정의하고 `gs_path`경로에 있는 모든 csv 파일들(i.e., custom_mapping_csv/*.csv)을 넣는다.
+# 8. tmp_custom_mapping 으로부터 각각의 임시 테이블을 생성하고(e.g., tmp_custom_concept, tmp_custom_vocabulary, etc.), 
+#    기존 어휘집 테이블 중 업데이트가 될 테이블만 임시 테이블을 생성하며(e.g., tmp_voc_concept, tmp_voc_concept_relationship, tmp_voc_vocabulary),
+#    그 임시 테이블에 새로운 매핑의 임시 테이블 데이터를 업데이트(INSERT) 한다.
+#    그 후 이것을 새로운 어휘집 테이블로 생성한다.
+
 def main():
 
     gsutil_rm_csv = "gsutil rm {target_path}/*.csv"

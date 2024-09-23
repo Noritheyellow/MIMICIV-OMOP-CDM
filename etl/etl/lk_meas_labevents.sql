@@ -167,7 +167,7 @@ SELECT
     CAST(src.start_datetime AS DATE)        AS date_id,
     src.start_datetime                      AS start_datetime,
     src.itemid                              AS itemid,
-    CAST(src.itemid AS STRING)              AS source_code, -- change working source code to the rerpresentation
+    CAST(src.itemid AS STRING)              AS source_c ode, -- change working source code to the rerpresentation
     labc.source_vocabulary_id               AS source_vocabulary_id,
     labc.source_concept_id                  AS source_concept_id,
     COALESCE(labc.target_domain_id, 'Measurement')  AS target_domain_id,
@@ -183,10 +183,10 @@ SELECT
     src.ref_range_lower                     AS range_low,
     src.ref_range_upper                     AS range_high,
     --
-    CONCAT('meas.', src.unit_id)    AS unit_id,
-    src.load_table_id               AS load_table_id,
-    src.load_row_id                 AS load_row_id,
-    src.trace_id                    AS trace_id
+    CONCAT('meas.', src.unit_id)            AS unit_id,
+    src.load_table_id                       AS load_table_id,
+    src.load_row_id                         AS load_row_id,
+    src.trace_id                            AS trace_id
 FROM  
     `@etl_project`.@etl_dataset.lk_meas_labevents_clean src
 INNER JOIN 

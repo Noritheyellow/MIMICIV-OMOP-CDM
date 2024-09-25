@@ -299,7 +299,7 @@ LEFT JOIN
     mimic_omop_cdm.voc_concept vc2
         ON vc2.concept_id = vcr.concept_id_2
         AND vc2.standard_concept = 'S'
-        AND vc2.invalid_reason IS NULL
+        AND (vc2.invalid_reason IS NULL OR vc2.invalid_reason = '')
 ;
 
 -- -------------------------------------------------------------------

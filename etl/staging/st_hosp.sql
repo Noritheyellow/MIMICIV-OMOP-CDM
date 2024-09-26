@@ -396,7 +396,7 @@ SELECT
     icd_version                     AS icd_version,
     --
     'diagnoses_icd'                 AS load_table_id,
-    md5(gen_random_uuid()::TEXT)    AS load_row_id,
+    ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)    AS load_row_id,
     row_to_json(ROW(
         hadm_id,
         seq_num
@@ -416,7 +416,7 @@ SELECT
     curr_service                        AS curr_service,
     --
     'services'                          AS load_table_id,
-    md5(gen_random_uuid()::TEXT)        AS load_row_id,
+    ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)        AS load_row_id,
     row_to_json(ROW(
         subject_id,
         hadm_id,
@@ -442,7 +442,7 @@ SELECT
     ref_range_upper                     AS ref_range_upper,
     --
     'labevents'                         AS load_table_id,
-    md5(gen_random_uuid()::TEXT)        AS load_row_id,
+    ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)        AS load_row_id,
     row_to_json(ROW(labevent_id))::TEXT AS trace_id
 FROM
     mimiciv_hosp.labevents
@@ -459,7 +459,7 @@ SELECT
     CAST(NULL AS TEXT)                  AS loinc_code, -- MIMIC IV 2.0 change, the field is removed
     --
     'd_labitems'                        AS load_table_id,
-    md5(gen_random_uuid()::TEXT)        AS load_row_id,
+    ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)        AS load_row_id,
     row_to_json(ROW(itemid))::TEXT      AS trace_id
 FROM
     mimiciv_hosp.d_labitems
@@ -475,7 +475,7 @@ SELECT
     icd_version                         AS icd_version,
     --
     'procedures_icd'                    AS load_table_id,
-    md5(gen_random_uuid()::TEXT)        AS load_row_id,
+    ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)        AS load_row_id,
     row_to_json(ROW(
         subject_id,
         hadm_id,
@@ -497,7 +497,7 @@ SELECT
     short_description                   AS short_description,
     --
     'hcpcsevents'                       AS load_table_id,
-    md5(gen_random_uuid()::TEXT)        AS load_row_id,
+    ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)        AS load_row_id,
     row_to_json(ROW(
         subject_id,
         hadm_id,
@@ -518,7 +518,7 @@ SELECT
     description                         AS description,
     --
     'drgcodes'                          AS load_table_id,
-    md5(gen_random_uuid()::TEXT)        AS load_row_id,
+    ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)        AS load_row_id,
     row_to_json(ROW(
         subject_id,
         hadm_id,
@@ -551,7 +551,7 @@ SELECT
     route                               AS route,
     --
     'prescriptions'                     AS load_table_id,
-    md5(gen_random_uuid()::TEXT)        AS load_row_id,
+    ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)        AS load_row_id,
     row_to_json(ROW(
         subject_id,
         hadm_id,
@@ -584,7 +584,7 @@ SELECT
     interpretation                  AS interpretation, -- bacteria's degree of resistance to the antibiotic
     --
     'microbiologyevents'            AS load_table_id,
-    md5(gen_random_uuid()::TEXT)    AS load_row_id,
+    ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)    AS load_row_id,
     row_to_json(ROW(
         subject_id,
         hadm_id,
@@ -606,7 +606,7 @@ FROM
 --     category                    AS category, 
 --     --
 --     'd_micro'                   AS load_table_id,
---     md5(gen_random_uuid()::TEXT)   AS load_row_id,
+--     ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)   AS load_row_id,
 --     row_to_json(ROW(
 --         itemid AS itemid
 --     ))                                  AS trace_id
@@ -684,7 +684,7 @@ SELECT
     category                        AS category, 
     --
     'microbiologyevents'            AS load_table_id,
-    md5(gen_random_uuid()::TEXT)    AS load_row_id,
+    ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)    AS load_row_id,
     trace_id                        AS trace_id
 FROM
     d_micro
@@ -703,7 +703,7 @@ SELECT
     -- route                               AS route,
     --
     'pharmacy'                          AS load_table_id,
-    md5(gen_random_uuid()::TEXT)        AS load_row_id,
+    ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)        AS load_row_id,
     row_to_json(ROW(pharmacy_id))::TEXT AS trace_id
 FROM
     mimiciv_hosp.pharmacy

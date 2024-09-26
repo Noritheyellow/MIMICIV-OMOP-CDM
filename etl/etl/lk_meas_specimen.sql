@@ -375,12 +375,18 @@ LEFT JOIN
 -- Modify above query fit into our project 'AEGIS'.
 -- -------------------------------------------------------------------
 
+-- -------------------------------------------------------------------
+-- lk_micro_cross_ref
+-- group microevent_id = trace_id for each type of records
+-- microbiology는 크게 4가지가 중요하다: specimen, test, organism, antibiotic.
+-- 이것의 추적 편의를 위해 위 테이블을 생성한다.
+-- -------------------------------------------------------------------
 
 DROP TABLE IF EXISTS mimic_omop_cdm.lk_micro_cross_ref;
 CREATE TABLE mimic_omop_cdm.lk_micro_cross_ref AS
 SELECT
-    trace_id                                    AS trace_id_ab, -- for antibiotics
-    FIRST_VALUE(src.trace_id) OVER (
+    trace_id                                    AS trace_id_ab, -- for antibiotics, 항생제가 제일 하위 계층이다.
+    FIRST_VALUE(src.trace_id) OVER (            
         PARTITION BY
             src.subject_id,
             src.hadm_id,
@@ -389,7 +395,7 @@ SELECT
             src.test_itemid,
             src.org_itemid
         ORDER BY src.trace_id
-    )                                           AS trace_id_org, -- for test-organism pairs
+    )                                           AS trace_id_org, -- for test-organism pairs, 배양균이 중간 계층이다.
     FIRST_VALUE(src.trace_id) OVER (
         PARTITION BY
             src.subject_id,
@@ -397,7 +403,7 @@ SELECT
             COALESCE(src.charttime, src.chartdate),
             src.spec_itemid
         ORDER BY src.trace_id
-    )                                           AS trace_id_spec, -- for specimen
+    )                                           AS trace_id_spec, -- for specimen, 표본이 상위 계층이다.
     subject_id                                  AS subject_id,    -- to pick additional hadm_id from admissions
     hadm_id                                     AS hadm_id,
     COALESCE(src.charttime, src.chartdate)      AS start_datetime -- just to do coalesce once
@@ -434,6 +440,8 @@ WHERE
 
 -- -------------------------------------------------------------------
 -- Part 2 of microbiology: test taken and organisms grown in the material of the test
+-- 배양균 관련 정보만을 추린 것이므로 이것의 하위개념인 항생제는 제외되고, 표본 및 수행된 실험명과 항생제만 기록된 테이블을 얻는다.
+-- 배양균이 specimen, test, organism, antibiotic 사이를 이어주는 교랑 역할을 한다.
 -- -------------------------------------------------------------------
 
 DROP TABLE IF EXISTS mimic_omop_cdm.lk_meas_organism_clean;
@@ -461,6 +469,7 @@ INNER JOIN
 
 -- -------------------------------------------------------------------
 -- Part 1 of microbiology: specimen
+-- 표본의 하위개념인 배양균은 제외되고, 표본 및 실험명만 기록된 테이블을 얻는다.
 -- -------------------------------------------------------------------
 
 DROP TABLE IF EXISTS mimic_omop_cdm.lk_specimen_clean;
@@ -476,7 +485,7 @@ SELECT DISTINCT
     0                               AS load_row_id,
     cr.trace_id_spec                AS trace_id         -- trace_id for specimen
 FROM
-    mimic_omop_cdm.lk_meas_organism_clean src -- mbe
+    mimic_omop_cdm.lk_meas_organism_clean src -- mbe; 온전하게 표본, 실험명, 배양균이 있는 테이블을 대상으로
 INNER JOIN
     mimic_omop_cdm.lk_micro_cross_ref cr
         ON src.trace_id = cr.trace_id_spec
@@ -485,6 +494,7 @@ INNER JOIN
 
 -- -------------------------------------------------------------------
 -- Part 3 of microbiology: antibiotics tested on organisms
+-- 최하위 개념인 항생제로 매핑되었으며 그에 직접적으로 대응되는 배양균을 갖도록 한다.
 -- -------------------------------------------------------------------
 
 DROP TABLE IF EXISTS mimic_omop_cdm.lk_meas_ab_clean;
@@ -521,23 +531,18 @@ WHERE
 
 DROP TABLE IF EXISTS mimic_omop_cdm.lk_d_micro_clean;
 CREATE TABLE mimic_omop_cdm.lk_d_micro_clean AS
-SELECT
-    dm.itemid                                       AS itemid,
-    CAST(dm.itemid AS TEXT)                         AS source_code,
-    dm.label                                        AS source_label, -- for organism_mapped: test name plus specimen name
-    CONCAT('mimiciv_micro_', LOWER(dm.category))    AS source_vocabulary_id,
-FROM
-    mimic_omop_cdm.src_d_micro dm
+SELECT itemid
+		 , itemid::TEXT                         AS source_code
+		 , "label"                              AS source_label
+		 , 'mimiciv_micro_' || lower(category)	AS source_vocabulary_id
+  FROM mimic_omop_cdm.src_d_micro sdm 
 UNION ALL
-SELECT DISTINCT
-    CAST(NULL AS BIGINT)                            AS itemid,
-    src.interpretation                              AS source_code,
-    src.interpretation                              AS source_label,
-    'mimiciv_micro_resistance'                      AS source_vocabulary_id
-FROM
-    mimic_omop_cdm.lk_meas_ab_clean src
-WHERE
-    src.interpretation IS NOT NULL
+SELECT DISTINCT CAST(NULL AS BIGINT)            AS itemid
+		 , lmac.interpretation                  AS source_code
+		 , lmac.interpretation                  AS source_label
+		 , 'mimiciv_micro_resistance'           AS source_vocabulary_id
+	FROM mimic_omop_cdm.lk_meas_ab_clean lmac 
+ WHERE interpretation IS NOT NULL 
 ;
 
 -- -------------------------------------------------------------------
@@ -591,7 +596,7 @@ LEFT JOIN
     mimic_omop_cdm.voc_concept vc2
         ON vc2.concept_id = vcr.concept_id_2
         AND vc2.standard_concept = 'S'
-        AND vc2.invalid_reason IS NULL
+        AND (vc2.invalid_reason IS NULL OR vc2.invalid_reason = '')
 ;
 
 -- -------------------------------------------------------------------
@@ -601,18 +606,18 @@ LEFT JOIN
 DROP TABLE IF EXISTS mimic_omop_cdm.lk_specimen_mapped;
 CREATE TABLE mimic_omop_cdm.lk_specimen_mapped AS
 SELECT
-    FARM_FINGERPRINT(GENERATE_UUID())           AS specimen_id,
-    src.subject_id                              AS subject_id,
-    COALESCE(src.hadm_id, hadm.hadm_id)         AS hadm_id,
-    CAST(src.start_datetime AS DATE)            AS date_id,
-    32856                                       AS type_concept_id, -- Lab
-    src.start_datetime                          AS start_datetime,
-    src.spec_itemid                             AS spec_itemid,
-    mc.source_code                              AS source_code,
-    mc.source_vocabulary_id                     AS source_vocabulary_id,
-    mc.source_concept_id                        AS source_concept_id,
-    COALESCE(mc.target_domain_id, 'Specimen')   AS target_domain_id,
-    mc.target_concept_id                        AS target_concept_id,
+    ABS(('x' || md5(gen_random_uuid()::TEXT))::bit(64)::BIGINT)     AS specimen_id,
+    src.subject_id                                                  AS subject_id,
+    COALESCE(src.hadm_id, hadm.hadm_id)                             AS hadm_id,
+    CAST(src.start_datetime AS DATE)                                AS date_id,
+    32856                                                           AS type_concept_id, -- Lab
+    src.start_datetime                                              AS start_datetime,
+    src.spec_itemid                                                 AS spec_itemid,
+    mc.source_code                                                  AS source_code,
+    mc.source_vocabulary_id                                         AS source_vocabulary_id,
+    mc.source_concept_id                                            AS source_concept_id,
+    COALESCE(mc.target_domain_id, 'Specimen')                       AS target_domain_id,
+    mc.target_concept_id                                            AS target_concept_id,
     -- 
     src.unit_id                     AS unit_id,
     src.load_table_id               AS load_table_id,
